@@ -4,7 +4,7 @@ let roomId=/^\/room\/([\w-]{32})$/.exec(location.pathname)?.[1]||null;
 let self,host,state,socket,reconnectTimer,retry=0,stopped=false,connected=false,serverOffset=0,lastPong=Date.now(),pendingControl=null,inflight=false,controlTimer,toastTimer;
 let videoKey=null,manualSync=false,joined=false,historyPending=false,oldest=null,messageIds=new Set();
 const storage={get(key){try{return localStorage.getItem(key);}catch{return null;}},set(key,value){try{localStorage.setItem(key,value);}catch{}}};
-const player=new Player({mount:$('player-mount'),onControl:controlFromPlayer,onNotice:notice,onReady:()=>reconcile(true),onAd:ad=>$('sync-status').textContent=ad?'◷ Реклама · просмотр продолжается':'⟳ Синхронизация'});
+const player=new Player({mount:$('player-mount'),onControl:controlFromPlayer,onNotice:notice,onReady:()=>reconcile(true),onAd:ad=>$('sync-status').textContent=ad?'◷ Реклама · просмотр продолжается':'⟳ Синхронизация',onVideoRejected:()=>{clearTimeout(controlTimer);pendingControl=null;toast('В комнате можно смотреть только видео из ссылки.');}});
 function notice(text){$('player-notice').replaceChildren();$('player-notice').hidden=!text;if(!text)return;$('player-notice').append(document.createTextNode(text));if(state?.video){const link=document.createElement('a');link.href=state.video.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Открыть в VK ↗';$('player-notice').append(link);}}
 function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,3500);}
 function error(text){$(joined?'room-error':'entry-error').textContent=text;}

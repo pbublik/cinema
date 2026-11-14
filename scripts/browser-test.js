@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {createApp} from '../server/index.js';
 // Deterministic player double. Real VK verification is a separate test:vk run.
-const mock=`window.VK={VideoPlayer:function(){let position=0,playing=false,updated=Date.now(),listeners={};const emit=e=>setTimeout(()=>{(listeners[e]||[]).forEach(f=>f({state:playing?'playing':'paused'}))},30);const time=()=>position+(playing?(Date.now()-updated)/1000:0);const api={play(){position=time();updated=Date.now();playing=true;emit('started')},pause(){position=time();updated=Date.now();playing=false;emit('paused')},seek(t){position=t;updated=Date.now();emit('seeked')},getCurrentTime:time,getState:()=>playing?'playing':'paused',getDuration:()=>3600,getErrorCode:()=>0,on(e,f){(listeners[e]||(listeners[e]=[])).push(f)},destroy(){listeners={}}};window.testPlayer=api;setTimeout(()=>emit('inited'),50);return api;}};`;
+const mock=`window.VK={VideoPlayer:function(){let position=0,playing=false,updated=Date.now(),listeners={};const emit=e=>setTimeout(()=>{(listeners[e]||[]).forEach(f=>f({state:playing?'playing':'paused'}))},30);const time=()=>position+(playing?(Date.now()-updated)/1000:0);const api={play(){position=time();updated=Date.now();playing=true;emit('started')},pause(){position=time();updated=Date.now();playing=false;emit('paused')},seek(t){position=t;updated=Date.now();emit('seeked')},getCurrentTime:time,getState:()=>playing?'playing':'paused',getDuration:()=>3600,getErrorCode:()=>0,on(e,f){(listeners[e]||(listeners[e]=[])).push(f)},simulateRecommendation(){const late=(listeners.started||[]).slice();(listeners.recommendationClicked||[]).forEach(f=>f({video:{id:999}}));playing=true;position=0;late.forEach(f=>f({state:"playing"}))},simulateForeignVideo(){(listeners.inited||[]).forEach(f=>f({videoId:"-999_888"}))},destroy(){listeners={}}};window.testPlayer=api;setTimeout(()=>emit('inited'),50);return api;}};`;
 await mkdir('test-results',{recursive:true});
 const app=await createApp({dataDir:null,grace:1000});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));
 const base=`http://127.0.0.1:${app.server.address().port}`,results=[];
@@ -25,6 +25,19 @@ try{
    await a.fill('#seek','2:15');await a.locator('#seek-form button').click();for(const page of [a,b,c])await page.waitForFunction(()=>window.testPlayer.getCurrentTime()>=135&&window.testPlayer.getCurrentTime()<140);
    await a.click('#pause');for(const page of [a,b,c])await page.waitForFunction(()=>window.testPlayer.getState()==='paused');
    const times=await Promise.all([a,b,c].map(p=>p.evaluate(()=>window.testPlayer.getCurrentTime())));assert.ok(Math.max(...times)-Math.min(...times)<1.5);
+   const lockedRoom=app.rooms.get(new URL(url).pathname.split('/').pop());
+   const lockedState=JSON.stringify(lockedRoom.state);
+   for(const page of [a,c]){
+    const embed=await page.locator('#player-mount iframe').getAttribute('src');
+    await page.evaluate(()=>{window.previousPlayer=window.testPlayer;window.testPlayer.simulateRecommendation();});
+    await page.waitForFunction(()=>window.testPlayer!==window.previousPlayer&&window.testPlayer.getCurrentTime()>=135&&window.testPlayer.getState()==='paused');
+    assert.equal(await page.locator('#player-mount iframe').getAttribute('src'),embed);
+    assert.equal(await page.locator('#player-mount iframe').count(),1);
+    assert.equal(JSON.stringify(lockedRoom.state),lockedState);
+   }
+   await a.evaluate(()=>{window.previousPlayer=window.testPlayer;window.testPlayer.simulateForeignVideo();});
+   await a.waitForFunction(()=>window.testPlayer!==window.previousPlayer&&window.testPlayer.getCurrentTime()>=135&&window.testPlayer.getState()==='paused');
+   assert.equal(JSON.stringify(lockedRoom.state),lockedState);
    await b.reload();await b.waitForSelector('#room:not([hidden])');await b.waitForFunction(()=>window.testPlayer?.getCurrentTime()>=135);
    await c.fill('#message','Третье сообщение');await c.click('#send-message');await a.getByText('Третье сообщение',{exact:true}).waitFor();
    await a.click('#fullscreen');assert.ok(await a.locator('#watch-area').evaluate(el=>el.classList.contains('expanded')&&el.classList.contains('floating-chat')));

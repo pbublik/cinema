@@ -11,8 +11,9 @@ function loadAPI() {
   });return apiPromise;
 }
 export class Player {
-  constructor({mount,onControl,onNotice,onReady,onAd}){Object.assign(this,{mount,onControl,onNotice,onReady,onAd});this.generation=0;this.ready=false;this.ad=false;this.suppressUntil=0;this.pending=null;}
-  async open(video){
+  constructor({mount,onControl,onNotice,onReady,onAd,onVideoRejected=()=>{}}){Object.assign(this,{mount,onControl,onNotice,onReady,onAd,onVideoRejected});this.generation=0;this.ready=false;this.ad=false;this.suppressUntil=0;this.restoreAttempts=0;}
+  async open(video,{restoring=false}={}){
+    if(!restoring)this.restoreAttempts=0;
     this.destroy();const generation=this.generation;
     try {
       await loadAPI();if(generation!==this.generation)return;
@@ -22,8 +23,24 @@ export class Player {
       this.loadTimer=setTimeout(()=>{if(!this.ready)this.onNotice('VK не подтвердил готовность плеера. Если видео недоступно, скопируйте в VK «Поделиться → Экспортировать» и вставьте код в поле сверху. Также проверьте сеть и поддержку видео браузером.');},18000);
       await loaded;if(generation!==this.generation)return;
       this.api=window.VK.VideoPlayer(frame);
-      const on=(event,handler)=>this.api.on(event,handler);
-      on('inited',()=>{clearTimeout(this.loadTimer);this.ready=true;this.onNotice('');this.onReady();});
+      const on=(event,handler)=>this.api.on(event,data=>{if(generation===this.generation)handler(data);});
+      const restoreSelected=()=>{
+        // Never publish playback events from a recommendation as room controls.
+        this.ready=false;
+        this.onVideoRejected();
+        try{this.api?.pause();}catch{}
+        if(++this.restoreAttempts>2){this.destroy();this.onNotice('VK переключает ролик вместо выбранного. Повторно откройте видео по ссылке комнаты.');return;}
+        // Removing the old iframe stops the unwanted video and its audio immediately.
+        this.open(video,{restoring:true});
+      };
+      on('recommendationClicked',restoreSelected);
+      on('inited',data=>{
+        // VK may report ownerId_videoId or just the numeric video id.
+        const reported=String(data?.videoId??'').replace(/^video/,'');
+        const selected=video.id;
+        if(/^-?\d+_\d+$/.test(reported)?reported!==selected:/^\d+$/.test(reported)&&reported!==selected.split('_')[1]){restoreSelected();return;}
+        clearTimeout(this.loadTimer);this.restoreAttempts=0;this.ready=true;this.onNotice('');this.onReady();
+      });
       for(const event of ['started','resumed','paused','seeked','ended'])on(event,data=>{
         if(!this.ready||this.ad||Date.now()<this.suppressUntil)return;
         this.onControl({position:this.api.getCurrentTime(),playing:event==='paused'||event==='ended'?false:event==='started'||event==='resumed'?true:data.state==='playing'});
