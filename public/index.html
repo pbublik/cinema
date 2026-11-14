@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#111315"><meta name="description" content="Смотрите VK Видео вместе с друзьями: одна комната, общий просмотр и живой чат."><title>CINEMA — совместный просмотр</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+  <header class="topbar"><a class="brand" href="/" aria-label="CINEMA — главная"><span class="brand-mark">▶</span>CINEMA</a><span id="connection" class="connection">Не подключено</span></header>
+  <main>
+    <section id="welcome" class="welcome">
+      <div class="intro"><span class="eyebrow">ВАШ МАЛЕНЬКИЙ КИНОЗАЛ</span><h1>Один фильм.<br>Один вечер.<br><span>Даже на расстоянии.</span></h1><p>Включайте VK Видео, зовите своих<br class="desktop"> и обсуждайте всё прямо во время просмотра.</p><div class="intro-features"><span>↗ По одной ссылке</span><span>◷ В одном моменте</span><span>♡ В своей компании</span></div></div>
+      <div class="entry-card"><div class="entry-icon">▶</div><h2 id="entry-title">Соберёмся вместе?</h2><p id="entry-description">Для начала нужно только ваше имя.<br>Никаких паролей и регистраций.</p><form id="entry-form"><label for="nickname">Как вас называть?</label><input id="nickname" name="nickname" minlength="2" maxlength="24" autocomplete="nickname" placeholder="Ваш никнейм" required><small>От 2 до 24 символов</small><button id="enter" class="primary" type="submit">Создать комнату <span>↗</span></button></form><p id="entry-error" class="error" role="alert"></p><div class="entry-note">Ссылка на комнату будет доступна только вам<br>и тем, с кем вы ей поделитесь.</div></div>
+    </section>
+    <section id="room" hidden>
+      <div class="room-heading"><div><h1>Наша кинокомната <span id="room-code"></span></h1></div><button id="invite" class="secondary">↗ Скопировать приглашение</button></div>
+      <div class="people-row"><div id="people" class="people" aria-label="Участники комнаты"></div><span id="role-note" class="muted"></span></div>
+      <div id="invite-fallback" hidden><label for="invite-link">Скопируйте ссылку вручную (Ctrl+C)</label><input id="invite-link" readonly></div>
+      <div id="watch-area" class="watch-area">
+        <div class="screen-column">
+          <form id="video-form" class="video-form"><label class="sr-only" for="video-url">Ссылка или код встраивания VK Видео</label><span class="vk-badge">VK</span><input id="video-url" placeholder="Вставьте ссылку или код встраивания VK Видео" maxlength="2048" required><button id="open-video" type="submit" class="primary">Открыть <span>↗</span></button></form>
+          <div id="screen" class="screen"><div id="empty-screen" class="empty-screen"><div class="empty-play">▶</div><h2>Хороший вечер начинается с видео</h2><p id="empty-hint">Вставьте ссылку VK Видео выше,<br>а затем пригласите друзей.</p></div><div id="player-mount"></div></div>
+          <div id="player-notice" class="notice" role="status" hidden></div>
+          <div class="playback-controls" id="playback-controls" hidden><button id="play" title="Запустить общий просмотр">▶ Старт</button><button id="pause" title="Поставить общий просмотр на паузу">Ⅱ Пауза</button><form id="seek-form"><label for="seek">Момент</label><input id="seek" placeholder="12:30" aria-label="Перемотка: минуты:секунды" pattern="[0-9]+(:[0-5][0-9]){0,2}"><button type="submit">Перейти</button></form><span id="position" class="muted">0:00</span></div>
+          <div class="screen-footer"><span id="sync-status" class="sync-status">○ Ожидаем видео</span><div class="screen-actions"><button id="sync">⟳ Синхронизироваться</button><button id="toggle-chat" class="fullscreen-only" aria-pressed="false">Чат</button><button id="fullscreen">⛶ <span>Полный экран</span></button></div></div>
+          <div id="room-error" class="error" role="alert"></div>
+          
+        </div>
+        <aside id="chat" class="chat"><div class="chat-heading"><h2>Обсуждаем <span class="small-dot"></span></h2><span id="online-count">0 в комнате</span><button id="chat-mode" class="fullscreen-only" type="button">Вся история</button></div><button id="older" class="older" hidden>Загрузить более ранние сообщения</button><div id="messages" class="messages" role="log" aria-label="Сообщения чата" aria-live="polite"><div id="chat-placeholder" class="chat-placeholder"><span>☏</span><p>Тот самый чат<br>на последнем ряду.</p><small>Делитесь впечатлениями.<br>Только без спойлеров!</small></div></div><button id="new-messages" class="new-messages" hidden>Новые сообщения ↓</button><form id="chat-form" class="chat-form"><label class="sr-only" for="message">Сообщение</label><textarea id="message" rows="2" maxlength="2000" placeholder="Ну что, смотрим?" required></textarea><div><button id="send-message" type="submit" class="primary" aria-label="Отправить">Отправить</button></div></form></aside>
+      </div>
+      <div class="room-bottom"><a href="/" id="leave">Выйти из комнаты ↗</a></div>
+    </section>
+  </main>
+  <footer class="page-footer"><span>Работает с VK Видео <span class="footer-divider">/</span> <a href="/?legacy=1">Совместимая версия</a></span></footer>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <noscript>Для комнат и чата включите JavaScript в браузере.</noscript>
+</body></html>

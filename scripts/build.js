@@ -1,0 +1,12 @@
+import {build} from 'esbuild';
+import {mkdir,readFile,writeFile,copyFile} from 'node:fs/promises';
+import {gzipSync} from 'node:zlib';
+await mkdir('dist/legacy',{recursive:true});
+for(const file of ['index.html','style.css','favicon.svg'])await copyFile(`public/${file}`,`dist/${file}`);
+await build({entryPoints:['public/app.js'],bundle:true,outfile:'dist/app.js',target:['chrome109','firefox115'],minify:true});
+await build({entryPoints:['public/app.js'],bundle:true,outfile:'dist/legacy/app.js',target:['chrome109','firefox115'],minify:true, supported:{'optional-chain':false,'nullish-coalescing':false}});
+const html=await readFile('public/index.html','utf8');
+await writeFile('dist/legacy/index.html',html.replace('src="/app.js"','src="/legacy/app.js"'));
+let total=0;for(const file of ['index.html','style.css','app.js'])total+=gzipSync(await readFile('dist/'+file)).length;
+console.log(`Сборка готова. HTML + CSS + JS gzip: ${(total/1024).toFixed(1)} КБ / 300 КБ.`);
+if(total>300*1024)throw new Error('Превышен бюджет ресурсов');

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: cinema
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "24.15.0"
+      - key: COOKIE_SECURE
+        value: "1"
